@@ -1,0 +1,32 @@
+name: university_app_project
+description: A professional Flutter + SQLite university app with login
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  sqflite: ^2.3.0
+  path_provider: ^2.1.2
+  provider: ^6.0.5
+  image_picker: ^0.8.7+5
+  flutter_slidable: ^2.0.0
+  percent_indicator: ^4.2.2
+  shared_preferences: ^2.1.1
+  fl_chart: ^0.64.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+
