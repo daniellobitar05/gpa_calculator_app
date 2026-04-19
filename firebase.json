@@ -1,8 +1,1 @@
-{
-  "firestore": {
-    "database": "(default)",
-    "location": "nam5",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  }
-}
+{"firestore":{"database":"(default)","location":"nam5","rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"gpa-calculator-app-c5252","configurations":{"web":"1:66428657008:web:7028e9cb758eaa5faac3b5","windows":"1:66428657008:web:1f8e2c636491b58eaac3b5"}}}}}}

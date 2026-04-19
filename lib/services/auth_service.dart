@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirestoreService _firestoreService = FirestoreService();
 
-  // Auth State Changes Request
+  // Auth State Changes Stream
   Stream<User?> get user => _auth.authStateChanges();
 
   // Get Current User
@@ -42,6 +44,11 @@ class AuthService {
       debugPrint("Error signing in: ${e.message}");
       rethrow;
     }
+  }
+
+  // Get role of currently signed-in user
+  Future<String?> getUserRole() async {
+    return await _firestoreService.getUserRole();
   }
 
   // Sign Out

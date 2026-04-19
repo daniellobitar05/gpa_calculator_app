@@ -169,7 +169,7 @@ class AnalyticsScreen extends StatelessWidget {
                               color: Colors.grey),
                           SizedBox(height: 8),
                           Text(
-                            'Add courses to see your academic standing',
+                            'Add courses or wait for instructor grades to see your academic standing',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.grey),
                           ),
@@ -191,41 +191,51 @@ class AnalyticsScreen extends StatelessWidget {
                   children: [
                     _buildGPACard(
                       'Weighted GPA',
-                      provider.weightedGPA.toStringAsFixed(2),
+                      (provider.courses.isNotEmpty 
+                        ? provider.weightedGPA 
+                        : (provider.academicStanding?.gpa ?? 0.0))
+                          .toStringAsFixed(2),
                       Colors.blue,
                     ),
                     _buildGPACard(
                       'Simple GPA',
-                      provider.simpleGPA.toStringAsFixed(2),
+                      (provider.courses.isNotEmpty 
+                        ? provider.simpleGPA 
+                        : (provider.academicStanding?.gpa ?? 0.0))
+                          .toStringAsFixed(2),
                       Colors.purple,
                     ),
                     _buildGPACard(
                       'Credits',
-                      provider.totalCredits.toString(),
+                      (provider.courses.isNotEmpty 
+                        ? provider.totalCredits 
+                        : provider.grades.length * 3)
+                          .toString(),
                       Colors.green,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                // Semester Performance
-                const Text(
-                  'Semester Performance',
-                  style: TextStyle(
+                // Semester Performance or Grades
+                Text(
+                  provider.courses.isNotEmpty ? 'Semester Performance' : 'Received Grades',
+                  style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                if (uniqueSemesters.isEmpty)
+                if (provider.courses.isEmpty && provider.grades.isEmpty)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
                       child: Text(
-                        'No courses added yet',
+                        'No grades or courses added yet',
                         style: TextStyle(color: Colors.grey),
                       ),
                     ),
                   )
-                else
+                else if (provider.courses.isNotEmpty)
+                  // Show semester performance for courses
                   Column(
                     children: uniqueSemesters.map((semester) {
                       final semesterCourses = provider.courses
@@ -252,44 +262,94 @@ class AnalyticsScreen extends StatelessWidget {
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                 children: [
+                                  Text(semester,
+                                      style: const TextStyle(
+                                          fontWeight:
+                                              FontWeight.bold)),
                                   Text(
-                                    semester,
+                                    'Avg Grade: ${avgGrade.toStringAsFixed(1)}',
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${semesterCourses.length} courses • $totalCredits credits',
-                                    style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12),
+                                        fontSize: 12,
+                                        color: Colors.grey),
                                   ),
                                 ],
                               ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                child: Text(
-                                  avgGrade.toStringAsFixed(2),
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
+                              Text(
+                                'Credits: $totalCredits',
+                                style:
+                                    const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                         ),
                       );
                     }).toList(),
+                  )
+                else
+                  // Show received grades for students
+                  Column(
+                    children: provider.grades
+                        .map((grade) {
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(grade.assignmentTitle,
+                                            style: const TextStyle(
+                                                fontWeight:
+                                                    FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis),
+                                        Text(
+                                          grade.courseName,
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          grade.letterGrade,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${grade.percentage.toStringAsFixed(1)}%',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
                   ),
                 const SizedBox(height: 24),
 

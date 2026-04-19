@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/course_provider.dart';
-import 'screens/login_screen.dart';
-import 'db/database_helper.dart';
+import 'screens/role_selection_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -13,7 +12,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   runApp(const MyApp());
 }
 
@@ -25,13 +24,23 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => CourseProvider(),
       child: MaterialApp(
-        title: 'University App',
+        title: 'UniPortal',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
           useMaterial3: true,
+          fontFamily: 'Roboto',
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6C63FF),
+            brightness: Brightness.dark,
+          ),
+          scaffoldBackgroundColor: const Color(0xFF0F0C29),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1A1740),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
         ),
-        home: const LoginScreen(),
+        home: const RoleSelectionScreen(),
       ),
     );
   }

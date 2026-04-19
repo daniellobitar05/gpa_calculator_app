@@ -59,7 +59,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                 children: [
                   // Course Dropdown
                   DropdownButtonFormField<String>(
-                    value: selectedCourseId.isNotEmpty ? selectedCourseId : null,
+                    initialValue: selectedCourseId.isNotEmpty ? selectedCourseId : null,
                     items: courses.map((course) {
                       return DropdownMenuItem(
                         value: course.firestoreId ?? '',

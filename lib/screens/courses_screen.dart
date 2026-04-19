@@ -102,7 +102,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: letterGrade,
+                    initialValue: letterGrade,
                     decoration: InputDecoration(
                       labelText: 'Letter Grade',
                       helperText: 'GPA: ${gradeMap[letterGrade]?.toStringAsFixed(1)}',
@@ -143,7 +143,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: semester,
+                    initialValue: semester,
                     decoration: const InputDecoration(labelText: 'Semester'),
                     items: const [
                       DropdownMenuItem(value: 'Spring', child: Text('Spring')),
@@ -168,37 +168,51 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   _formKey.currentState!.save();
                   final provider = Provider.of<CourseProvider>(context, listen: false);
                   
-                  if (course != null) {
-                    provider.updateCourse(
-                      Course(
-                        id: course.id, // Legacy
-                        firestoreId: course.firestoreId,
-                        name: courseName,
-                        code: courseCode,
-                        grade: grade,
-                        semester: semester,
-                        creditHours: creditHours,
-                        instructor: instructor,
-                        description: description,
-                        capacity: capacity,
-                        enrolled: enrolled,
-                      ),
+                  try {
+                    if (course != null) {
+                      provider.updateCourse(
+                        Course(
+                          id: course.id, // Legacy
+                          firestoreId: course.firestoreId,
+                          name: courseName,
+                          code: courseCode,
+                          grade: grade,
+                          semester: semester,
+                          creditHours: creditHours,
+                          instructor: instructor,
+                          description: description,
+                          capacity: capacity,
+                          enrolled: enrolled,
+                        ),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Course updated!')),
+                      );
+                    } else {
+                      provider.addCourse(
+                        Course(
+                          name: courseName,
+                          code: courseCode,
+                          grade: grade,
+                          semester: semester,
+                          creditHours: creditHours,
+                          instructor: instructor,
+                          description: description,
+                          capacity: capacity,
+                          enrolled: enrolled,
+                        ),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Course added!')),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('❌ Error: $e')),
                     );
-                  } else {
-                    provider.addCourse(
-                      Course(
-                        name: courseName,
-                        code: courseCode,
-                        grade: grade,
-                        semester: semester,
-                        creditHours: creditHours,
-                        instructor: instructor,
-                        description: description,
-                        capacity: capacity,
-                        enrolled: enrolled,
-                      ),
-                    );
+                    debugPrint('Error saving course: $e');
                   }
+                  
                   Navigator.pop(dialogContext);
                 }
               },

@@ -1,9 +1,11 @@
+// This file has been regenerated - cache bust
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/course.dart';
 import '../models/assignment.dart';
+import '../models/grade_entry.dart';
 import '../models/academic_standing.dart';
 
 class CourseProvider with ChangeNotifier {
@@ -12,10 +14,12 @@ class CourseProvider with ChangeNotifier {
   
   List<Course> _courses = [];
   List<Assignment> _assignments = [];
+  List<GradeEntry> _grades = [];
   AcademicStanding? _academicStanding;
 
   StreamSubscription? _coursesSubscription;
   StreamSubscription? _assignmentsSubscription;
+  StreamSubscription? _gradesSubscription;
 
   CourseProvider() {
     // Listen to Auth State changes to subscribe/unsubscribe
@@ -29,6 +33,8 @@ class CourseProvider with ChangeNotifier {
   }
   
   void _subscribeToData() {
+    debugPrint('[PROVIDER] _subscribeToData called');
+    
     _coursesSubscription?.cancel();
     _coursesSubscription = _firestoreService.getCoursesStream().listen((coursesData) {
       _courses = coursesData.map((c) => Course.fromMap(c)).toList();
@@ -41,13 +47,27 @@ class CourseProvider with ChangeNotifier {
       _assignments = assignmentsData.map((a) => Assignment.fromMap(a)).toList();
       notifyListeners();
     });
+
+    _gradesSubscription?.cancel();
+    debugPrint('[PROVIDER] Setting up grades subscription...');
+    _gradesSubscription = _firestoreService.getGradesForStudent().listen((gradesData) {
+      debugPrint('[PROVIDER] Received ${gradesData.length} grades');
+      _grades = gradesData.map((g) => GradeEntry.fromMap(g)).toList();
+      debugPrint('[PROVIDER] Converted to GradeEntry list, notifying listeners...');
+      _updateAcademicStanding();
+      notifyListeners();
+    }, onError: (error) {
+      debugPrint('[PROVIDER] Error in grades subscription: $error');
+    });
   }
 
   void _unsubscribeFromData() {
     _coursesSubscription?.cancel();
     _assignmentsSubscription?.cancel();
+    _gradesSubscription?.cancel();
     _courses = [];
     _assignments = [];
+    _grades = [];
     _academicStanding = null;
     notifyListeners();
   }
@@ -56,11 +76,13 @@ class CourseProvider with ChangeNotifier {
   void dispose() {
     _coursesSubscription?.cancel();
     _assignmentsSubscription?.cancel();
+    _gradesSubscription?.cancel();
     super.dispose();
   }
 
   List<Course> get courses => _courses;
   List<Assignment> get assignments => _assignments;
+  List<GradeEntry> get grades => _grades;
   AcademicStanding? get academicStanding => _academicStanding;
 
   // Weighted GPA calculation
@@ -108,15 +130,56 @@ class CourseProvider with ChangeNotifier {
 
   // Calculate academic standing
   void _updateAcademicStanding() {
-    if (_courses.isEmpty) {
+    if (_courses.isEmpty && _grades.isEmpty) {
       _academicStanding = null;
-    } else {
+    } else if (_courses.isNotEmpty) {
+      // Instructor or student with courses in their collection
       _academicStanding = AcademicStanding.calculate(
         gpa: weightedGPA,
         creditsEarned: totalCredits,
         creditsRequired: 120,
       );
+    } else if (_grades.isNotEmpty) {
+      // Student with grades from instructors (no courses in their collection)
+      // Calculate GPA from grades
+      final gradesGPA = _calculateGPAFromGrades();
+      final estimatedCredits = _grades.length * 3; // Assume 3 credits per grade
+      
+      _academicStanding = AcademicStanding.calculate(
+        gpa: gradesGPA,
+        creditsEarned: estimatedCredits,
+        creditsRequired: 120,
+      );
     }
+  }
+
+  // Helper method to convert letter grades to GPA scale
+  double _letterGradeToGPA(String letterGrade) {
+    switch (letterGrade) {
+      case 'A':
+        return 4.0;
+      case 'B':
+        return 3.0;
+      case 'C':
+        return 2.0;
+      case 'D':
+        return 1.0;
+      case 'F':
+        return 0.0;
+      default:
+        return 0.0;
+    }
+  }
+
+  // Calculate GPA from grades
+  double _calculateGPAFromGrades() {
+    if (_grades.isEmpty) return 0.0;
+    
+    double totalGPA = 0;
+    for (var grade in _grades) {
+      totalGPA += _letterGradeToGPA(grade.letterGrade);
+    }
+    return totalGPA / _grades.length;
   }
 
   Future<void> addCourse(Course course) async {
@@ -124,6 +187,7 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.addCourse(course);
     } catch (e) {
       debugPrint('Error adding course: $e');
+      rethrow;
     }
   }
 
@@ -133,6 +197,7 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.updateCourse(course.firestoreId!, course.toMap());
     } catch (e) {
       debugPrint('Error updating course: $e');
+      rethrow;
     }
   }
 
@@ -141,6 +206,7 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.deleteCourse(firestoreId);
     } catch (e) {
       debugPrint('Error deleting course: $e');
+      rethrow;
     }
   }
 
@@ -149,6 +215,7 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.addAssignment(assignment.toMap());
     } catch (e) {
       debugPrint('Error adding assignment: $e');
+      rethrow;
     }
   }
 
@@ -158,6 +225,7 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.updateAssignment(assignment.firestoreId!, assignment.toMap());
     } catch (e) {
       debugPrint('Error updating assignment: $e');
+      rethrow;
     }
   }
 
@@ -166,12 +234,13 @@ class CourseProvider with ChangeNotifier {
       await _firestoreService.deleteAssignment(firestoreId);
     } catch (e) {
       debugPrint('Error deleting assignment: $e');
+      rethrow;
     }
   }
 
   // Get assignments by course
   List<Assignment> getAssignmentsByCourse(String courseId) {
-     if (courseId.isEmpty) return [];
+    if (courseId.isEmpty) return [];
     return _assignments.where((a) => a.courseFirestoreId == courseId).toList();
   }
 
