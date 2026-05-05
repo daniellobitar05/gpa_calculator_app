@@ -16,8 +16,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
   final _formKey = GlobalKey<FormState>();
   String courseName = '';
   String courseCode = '';
-  String letterGrade = 'A';
-  double grade = 4.0;
+  double grade = 0.0;
   String semester = 'Spring';
   int creditHours = 3;
   String instructor = '';
@@ -25,38 +24,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
   int capacity = 30;
   int enrolled = 1;
 
-  // Letter grade to GPA mapping
-  final Map<String, double> gradeMap = {
-    'A+': 4.0,
-    'A': 4.0,
-    'A-': 3.7,
-    'B+': 3.3,
-    'B': 3.0,
-    'B-': 2.7,
-    'C+': 2.3,
-    'C': 2.0,
-    'C-': 1.7,
-    'D+': 1.3,
-    'D': 1.0,
-    'F': 0.0,
-  };
-
-  // GPA to Letter grade mapping (for editing)
-  String _getLetterGrade(double gpa) {
-    for (var entry in gradeMap.entries) {
-      if (entry.value == gpa) {
-        return entry.key;
-      }
-    }
-    return 'A';
-  }
-
   void _showCourseDialog({Course? course}) {
     if (course != null) {
       courseName = course.name;
       courseCode = course.code;
       grade = course.grade;
-      letterGrade = _getLetterGrade(course.grade);
       semester = course.semester;
       creditHours = course.creditHours;
       instructor = course.instructor;
@@ -66,8 +38,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     } else {
       courseName = '';
       courseCode = '';
-      letterGrade = 'A';
-      grade = 4.0;
+      grade = 0.0;
       semester = 'Spring';
       creditHours = 3;
       instructor = '';
@@ -78,148 +49,120 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(course != null ? 'Edit Course' : 'Add Course'),
-          content: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: courseName,
-                    decoration: const InputDecoration(labelText: 'Course Name'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Enter course name' : null,
-                    onSaved: (value) => courseName = value ?? '',
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: courseCode,
-                    decoration: const InputDecoration(labelText: 'Course Code'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Enter course code' : null,
-                    onSaved: (value) => courseCode = value ?? '',
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: letterGrade,
-                    decoration: InputDecoration(
-                      labelText: 'Letter Grade',
-                      helperText: 'GPA: ${gradeMap[letterGrade]?.toStringAsFixed(1)}',
-                    ),
-                    items: gradeMap.keys.map((String grade) {
-                      return DropdownMenuItem(
-                        value: grade,
-                        child: Text('$grade (${gradeMap[grade]?.toStringAsFixed(1)})'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        letterGrade = value ?? 'A';
-                        grade = gradeMap[letterGrade] ?? 4.0;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: creditHours.toString(),
-                    decoration: const InputDecoration(labelText: 'Credit Hours'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) => value?.isEmpty ?? true ? 'Enter credit hours' : null,
-                    onSaved: (value) => creditHours = int.tryParse(value ?? '3') ?? 3,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: instructor,
-                    decoration: const InputDecoration(labelText: 'Instructor Name'),
-                    onSaved: (value) => instructor = value ?? '',
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: description,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                    maxLines: 2,
-                    onSaved: (value) => description = value ?? '',
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: semester,
-                    decoration: const InputDecoration(labelText: 'Semester'),
-                    items: const [
-                      DropdownMenuItem(value: 'Spring', child: Text('Spring')),
-                      DropdownMenuItem(value: 'Summer', child: Text('Summer')),
-                      DropdownMenuItem(value: 'Fall', child: Text('Fall')),
-                      DropdownMenuItem(value: 'Winter', child: Text('Winter')),
-                    ],
-                    onChanged: (value) => setDialogState(() => semester = value ?? 'Spring'),
-                  ),
-                ],
-              ),
+      builder: (context) => AlertDialog(
+        title: Text(course != null ? 'Edit Course' : 'Add Course'),
+        content: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: courseName,
+                  decoration: const InputDecoration(labelText: 'Course Name'),
+                  validator: (value) => value?.isEmpty ?? true ? 'Enter course name' : null,
+                  onSaved: (value) => courseName = value ?? '',
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: courseCode,
+                  decoration: const InputDecoration(labelText: 'Course Code'),
+                  validator: (value) => value?.isEmpty ?? true ? 'Enter course code' : null,
+                  onSaved: (value) => courseCode = value ?? '',
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: grade != 0.0 ? grade.toString() : '',
+                  decoration: const InputDecoration(labelText: 'Grade (0.0-4.0)'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => value?.isEmpty ?? true ? 'Enter grade' : null,
+                  onSaved: (value) => grade = double.tryParse(value ?? '0') ?? 0.0,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: creditHours.toString(),
+                  decoration: const InputDecoration(labelText: 'Credit Hours'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => value?.isEmpty ?? true ? 'Enter credit hours' : null,
+                  onSaved: (value) => creditHours = int.tryParse(value ?? '3') ?? 3,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: instructor,
+                  decoration: const InputDecoration(labelText: 'Instructor Name'),
+                  onSaved: (value) => instructor = value ?? '',
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: description,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                  onSaved: (value) => description = value ?? '',
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: semester,
+                  decoration: const InputDecoration(labelText: 'Semester'),
+                  items: const [
+                    DropdownMenuItem(value: 'Spring', child: Text('Spring')),
+                    DropdownMenuItem(value: 'Summer', child: Text('Summer')),
+                    DropdownMenuItem(value: 'Fall', child: Text('Fall')),
+                    DropdownMenuItem(value: 'Winter', child: Text('Winter')),
+                  ],
+                  onChanged: (value) => setState(() => semester = value ?? 'Spring'),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  _formKey.currentState!.save();
-                  final provider = Provider.of<CourseProvider>(context, listen: false);
-                  
-                  try {
-                    if (course != null) {
-                      provider.updateCourse(
-                        Course(
-                          id: course.id, // Legacy
-                          firestoreId: course.firestoreId,
-                          name: courseName,
-                          code: courseCode,
-                          grade: grade,
-                          semester: semester,
-                          creditHours: creditHours,
-                          instructor: instructor,
-                          description: description,
-                          capacity: capacity,
-                          enrolled: enrolled,
-                        ),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✅ Course updated!')),
-                      );
-                    } else {
-                      provider.addCourse(
-                        Course(
-                          name: courseName,
-                          code: courseCode,
-                          grade: grade,
-                          semester: semester,
-                          creditHours: creditHours,
-                          instructor: instructor,
-                          description: description,
-                          capacity: capacity,
-                          enrolled: enrolled,
-                        ),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✅ Course added!')),
-                      );
-                    }
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('❌ Error: $e')),
-                    );
-                    debugPrint('Error saving course: $e');
-                  }
-                  
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                _formKey.currentState!.save();
+                final provider = Provider.of<CourseProvider>(context, listen: false);
+                
+                if (course != null) {
+                  provider.updateCourse(
+                    Course(
+                      id: course.id,
+                      name: courseName,
+                      code: courseCode,
+                      grade: grade,
+                      semester: semester,
+                      creditHours: creditHours,
+                      instructor: instructor,
+                      description: description,
+                      capacity: capacity,
+                      enrolled: enrolled,
+                    ),
+                  );
+                } else {
+                  provider.addCourse(
+                    Course(
+                      name: courseName,
+                      code: courseCode,
+                      grade: grade,
+                      semester: semester,
+                      creditHours: creditHours,
+                      instructor: instructor,
+                      description: description,
+                      capacity: capacity,
+                      enrolled: enrolled,
+                    ),
+                  );
+                }
+                if (!mounted) return;
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
@@ -247,7 +190,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Slidable(
-                        key: ValueKey(course.firestoreId ?? course.id),
+                        key: ValueKey(course.id),
                         endActionPane: ActionPane(
                           motion: const ScrollMotion(),
                           children: [
@@ -260,9 +203,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                             ),
                             SlidableAction(
                               onPressed: (_) {
-                                if (course.firestoreId != null) {
-                                  provider.deleteCourse(course.firestoreId!);
-                                }
+                                provider.deleteCourse(course.id!);
                               },
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,

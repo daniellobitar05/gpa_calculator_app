@@ -13,7 +13,7 @@ class AssignmentsScreen extends StatefulWidget {
 
 class _AssignmentsScreenState extends State<AssignmentsScreen> {
   final _formKey = GlobalKey<FormState>();
-  String selectedCourseId = '';
+  String selectedCourse = '';
   String assignmentTitle = '';
   String description = '';
   double maxPoints = 0.0;
@@ -25,17 +25,24 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
     Assignment? assignment,
     required List<Course> courses,
   }) {
-    // Reset form
+    if (courses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add a course first')),
+      );
+      return;
+    }
+
+    // Reset and set values
     if (assignment != null) {
-      selectedCourseId = assignment.courseFirestoreId ?? '';
+      selectedCourse = assignment.courseId.toString();
       assignmentTitle = assignment.title;
-      description = assignment.description;
+      description = assignment.description ?? '';
       maxPoints = assignment.maxPoints;
       earnedPoints = assignment.earnedPoints;
       dueDate = assignment.dueDate;
       weight = assignment.weight;
     } else {
-      selectedCourseId = courses.isNotEmpty ? (courses.first.firestoreId ?? '') : '';
+      selectedCourse = (courses[0].id ?? 0).toString();
       assignmentTitle = '';
       description = '';
       maxPoints = 0.0;
@@ -48,120 +55,99 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(
-            assignment != null ? 'Edit Assignment' : 'Add Assignment',
-          ),
+          title: Text(assignment != null ? 'Edit Assignment' : 'Add Assignment'),
           content: Form(
             key: _formKey,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Course Dropdown
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCourseId.isNotEmpty ? selectedCourseId : null,
-                    items: courses.map((course) {
-                      return DropdownMenuItem(
-                        value: course.firestoreId ?? '',
-                        child: Text(course.name),
-                      );
-                    }).toList(),
+                    value: selectedCourse.isNotEmpty ? selectedCourse : null,
+                    items: courses
+                        .map((course) => DropdownMenuItem(
+                              value: (course.id ?? 0).toString(),
+                              child: Text(course.name),
+                            ))
+                        .toList(),
                     onChanged: (value) {
-                      setDialogState(
-                        () => selectedCourseId = value ?? '',
-                      );
+                      setDialogState(() {
+                        selectedCourse = value ?? '';
+                      });
                     },
-                    decoration:
-                        const InputDecoration(labelText: 'Select Course'),
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Select a course' : null,
+                    decoration: const InputDecoration(labelText: 'Course'),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Please select a course'
+                        : null,
                   ),
                   const SizedBox(height: 12),
-
-                  // Assignment Title
                   TextFormField(
                     initialValue: assignmentTitle,
-                    decoration: const InputDecoration(
-                      labelText: 'Assignment Title',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Assignment Title'),
+                    onChanged: (value) {
+                      assignmentTitle = value;
+                    },
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Enter title' : null,
-                    onChanged: (value) => assignmentTitle = value,
+                        value == null || value.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
-
-                  // Description
                   TextFormField(
                     initialValue: description,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Description'),
                     maxLines: 3,
-                    onChanged: (value) => description = value,
+                    onChanged: (value) {
+                      description = value;
+                    },
                   ),
                   const SizedBox(height: 12),
-
-                  // Max Points
                   TextFormField(
-                    initialValue: maxPoints != 0.0
-                        ? maxPoints.toString()
-                        : '',
-                    decoration: const InputDecoration(
-                      labelText: 'Max Points',
-                    ),
+                    initialValue: maxPoints != 0.0 ? maxPoints.toString() : '',
+                    decoration: const InputDecoration(labelText: 'Max Points'),
                     keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      maxPoints = double.tryParse(value) ?? 0.0;
+                    },
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Enter max points' : null,
-                    onChanged: (value) =>
-                        maxPoints = double.tryParse(value) ?? 0.0,
+                        value == null || value.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
-
-                  // Earned Points
                   TextFormField(
-                    initialValue:
-                        earnedPoints != null ? earnedPoints.toString() : '',
+                    initialValue: earnedPoints?.toString() ?? '',
                     decoration: const InputDecoration(
-                      labelText: 'Earned Points (Optional)',
-                    ),
+                        labelText: 'Earned Points (Optional)'),
                     keyboardType: TextInputType.number,
-                    onChanged: (value) =>
-                        earnedPoints = double.tryParse(value),
+                    onChanged: (value) {
+                      earnedPoints = double.tryParse(value);
+                    },
                   ),
                   const SizedBox(height: 12),
-
-                  // Weight
                   TextFormField(
-                    initialValue:
-                        weight != 0.0 ? weight.toString() : '10.0',
-                    decoration: const InputDecoration(
-                      labelText: 'Weight (%)',
-                    ),
+                    initialValue: weight.toString(),
+                    decoration: const InputDecoration(labelText: 'Weight (%)'),
                     keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      weight = double.tryParse(value) ?? 10.0;
+                    },
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Enter weight' : null,
-                    onChanged: (value) =>
-                        weight = double.tryParse(value) ?? 10.0,
+                        value == null || value.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
-
-                  // Due Date Picker
                   ListTile(
                     title: const Text('Due Date'),
-                    subtitle: Text(
-                      dueDate.toString().split(' ')[0],
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    subtitle: Text(dueDate.toString().split(' ')[0]),
+                    trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
                       final date = await showDatePicker(
                         context: dialogContext,
                         initialDate: dueDate,
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now()
-                            .add(const Duration(days: 365)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365)),
                       );
                       if (date != null) {
-                        setDialogState(() => dueDate = date);
+                        setDialogState(() {
+                          dueDate = date;
+                        });
                       }
                     },
                   ),
@@ -177,35 +163,27 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  final provider = Provider.of<CourseProvider>(
-                    context,
-                    listen: false,
-                  );
+                  final provider =
+                      Provider.of<CourseProvider>(context, listen: false);
 
                   try {
                     if (assignment != null) {
-                      // Update existing assignment
                       await provider.updateAssignment(
                         Assignment(
                           id: assignment.id,
-                          firestoreId: assignment.firestoreId,
-                          courseId: assignment.courseId,
-                          courseFirestoreId: selectedCourseId,
+                          courseId: int.parse(selectedCourse),
                           title: assignmentTitle,
                           description: description,
                           maxPoints: maxPoints,
                           earnedPoints: earnedPoints,
                           dueDate: dueDate,
-                          status: assignment.status,
                           weight: weight,
                         ),
                       );
                     } else {
-                      // Add new assignment
                       await provider.addAssignment(
                         Assignment(
-                          courseFirestoreId: selectedCourseId,
-                          courseId: null, // Legacy
+                          courseId: int.parse(selectedCourse),
                           title: assignmentTitle,
                           description: description,
                           maxPoints: maxPoints,
@@ -215,26 +193,20 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                         ),
                       );
                     }
-
                     if (!mounted) return;
                     Navigator.pop(dialogContext);
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          assignment != null
-                              ? 'Assignment updated'
-                              : 'Assignment added',
-                        ),
+                        content: Text(assignment != null
+                            ? 'Assignment updated'
+                            : 'Assignment added'),
                         duration: const Duration(seconds: 2),
                       ),
                     );
                   } catch (e) {
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${e.toString()}'),
-                        duration: const Duration(seconds: 2),
-                      ),
+                      SnackBar(content: Text('Error: ${e.toString()}')),
                     );
                   }
                 }
@@ -260,14 +232,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
             elevation: 0,
           ),
           floatingActionButton: FloatingActionButton(
-            onPressed: provider.courses.isEmpty
-                ? null
-                : () => _showAssignmentDialog(
-                      courses: provider.courses,
-                    ),
-            tooltip: provider.courses.isEmpty
-                ? 'Add a course first'
-                : 'Add Assignment',
+            onPressed: () =>
+                _showAssignmentDialog(courses: provider.courses),
+            tooltip: 'Add Assignment',
             child: const Icon(Icons.add),
           ),
           body: SingleChildScrollView(
@@ -275,10 +242,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Overdue Section
                 if (overdue.isNotEmpty) ...[
                   const Text(
-                    'Overdue Assignments ⚠️',
+                    'Overdue Assignments',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -288,30 +254,40 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                   const SizedBox(height: 8),
                   Column(
                     children: overdue.map((assignment) {
+                      final course = provider.courses.firstWhere(
+                        (c) => c.id == assignment.courseId,
+                        orElse: () => Course(
+                          name: 'Unknown',
+                          code: 'N/A',
+                          grade: 0.0,
+                          semester: 'N/A',
+                          creditHours: 0,
+                          instructor: 'N/A',
+                        ),
+                      );
                       return Card(
                         color: Colors.red.shade50,
-                        margin: const EdgeInsets.only(bottom: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: ListTile(
-                          leading: const Icon(
-                            Icons.warning,
-                            color: Colors.red,
-                          ),
+                          leading:
+                              const Icon(Icons.warning, color: Colors.red),
                           title: Text(assignment.title),
                           subtitle: Text(
-                            'Due: ${assignment.dueDate.toString().split(' ')[0]}',
+                            '${course.name} • ${assignment.dueDate.toString().split(' ')[0]}',
+                            style: const TextStyle(fontSize: 12),
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
-                              if (assignment.firestoreId != null) {
-                                provider.deleteAssignment(assignment.firestoreId!);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Assignment deleted'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              }
+                              provider.deleteAssignment(assignment.id!);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Assignment deleted'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -320,130 +296,191 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-
-                // Pending Section
                 const Text(
-                  'Upcoming Assignments 📅',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Upcoming Assignments',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 if (pending.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
                       child: Text(
                         'No upcoming assignments',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                     ),
                   )
                 else
                   Column(
                     children: pending.map((assignment) {
-                      // Safely get course
                       final course = provider.courses.firstWhere(
-                        (c) => c.firestoreId == assignment.courseFirestoreId,
+                        (c) => c.id == assignment.courseId,
                         orElse: () => Course(
-                          name: 'Unknown Course',
+                          name: 'Unknown',
                           code: 'N/A',
                           grade: 0.0,
                           semester: 'N/A',
-                          instructor: 'N/A',
-                          description: '',
-                          capacity: 0,
-                          enrolled: 0,
                           creditHours: 0,
+                          instructor: 'N/A',
                         ),
                       );
-
                       final daysUntil = assignment.dueDate
                           .difference(DateTime.now())
                           .inDays;
+                      final progress = assignment.earnedPoints != null
+                          ? (assignment.earnedPoints! / assignment.maxPoints) * 100
+                          : 0.0;
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: daysUntil <= 3
-                                  ? Colors.red.shade100
-                                  : Colors.blue.shade100,
-                              child: Text(
-                                '$daysUntil',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: daysUntil <= 3
-                                      ? Colors.red
-                                      : Colors.blue,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              assignment.title,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(course.name),
-                                const SizedBox(height: 4),
-                                if (assignment.earnedPoints != null)
-                                  Text(
-                                    '${assignment.earnedPoints}/${assignment.maxPoints} points',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  )
-                                else
-                                  const Text(
-                                    'Not graded yet',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            trailing: SizedBox(
-                              width: 80,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, size: 18),
-                                    onPressed: () =>
-                                        _showAssignmentDialog(
-                                          assignment: assignment,
-                                          courses: provider.courses,
-                                        ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, size: 18),
-                                    onPressed: () {
-                                      if (assignment.firestoreId != null) {
-                                        provider.deleteAssignment(
-                                            assignment.firestoreId!);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content:
-                                                Text('Assignment deleted'),
-                                            duration: Duration(seconds: 2),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          assignment.title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
                                           ),
-                                        );
-                                      }
-                                    },
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          course.name,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: daysUntil <= 3
+                                          ? Colors.red.shade100
+                                          : Colors.blue.shade100,
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      '$daysUntil days',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: daysUntil <= 3
+                                            ? Colors.red
+                                            : Colors.blue,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    assignment.earnedPoints != null
+                                        ? '${assignment.earnedPoints}/${assignment.maxPoints} points'
+                                        : 'Not graded',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Weight: ${assignment.weight.toStringAsFixed(1)}%',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: progress > 100 ? 1.0 : progress / 100,
+                                      minHeight: 6,
+                                      backgroundColor:
+                                          Colors.grey.shade300,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        progress >= 70
+                                            ? Colors.green
+                                            : progress >= 50
+                                                ? Colors.orange
+                                                : Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 80,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.end,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit,
+                                              size: 18),
+                                          padding: EdgeInsets.zero,
+                                          constraints:
+                                              const BoxConstraints(),
+                                          onPressed: () =>
+                                              _showAssignmentDialog(
+                                                assignment: assignment,
+                                                courses: provider.courses,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              size: 18),
+                                          padding: EdgeInsets.zero,
+                                          constraints:
+                                              const BoxConstraints(),
+                                          onPressed: () {
+                                            provider.deleteAssignment(
+                                                assignment.id!);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content:
+                                                    Text('Assignment deleted'),
+                                                duration:
+                                                    Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       );

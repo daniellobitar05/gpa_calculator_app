@@ -1,6 +1,5 @@
 class Course {
-  final int? id; // SQLite ID, kept for compatibility if needed, but likely null for Firestore
-  final String? firestoreId; // Firestore Document ID
+  final int? id;
   final String name;
   final String code;
   final double grade;
@@ -13,7 +12,6 @@ class Course {
 
   Course({
     this.id,
-    this.firestoreId,
     required this.name,
     required this.code,
     required this.grade,
@@ -27,7 +25,7 @@ class Course {
 
   Map<String, dynamic> toMap() {
     return {
-      // 'id': id, // Don't send local ID to Firestore usually, unless migrating.
+      'id': id,
       'name': name,
       'code': code,
       'grade': grade,
@@ -42,12 +40,11 @@ class Course {
 
   factory Course.fromMap(Map<String, dynamic> map) {
     return Course(
-      id: map['id'], // Might be null from Firestore
-      firestoreId: map['firestoreId'], // Injected by Service
-      name: map['name'] ?? '',
-      code: map['code'] ?? '',
-      grade: (map['grade'] ?? 0).toDouble(),
-      semester: map['semester'] ?? '',
+      id: map['id'],
+      name: map['name'],
+      code: map['code'],
+      grade: map['grade'],
+      semester: map['semester'],
       creditHours: map['creditHours'] ?? 3,
       instructor: map['instructor'] ?? 'Unknown',
       description: map['description'],
@@ -56,4 +53,3 @@ class Course {
     );
   }
 }
-

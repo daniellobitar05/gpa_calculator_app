@@ -1,42 +1,42 @@
 class AcademicStanding {
-  final String level;
+  final String status; // excellent, good, warning, probation
   final double gpa;
   final int creditsEarned;
-  final int creditsRequired;
+  final int creditsAttempted;
+  final String message;
 
   AcademicStanding({
-    required this.level,
+    required this.status,
     required this.gpa,
     required this.creditsEarned,
-    required this.creditsRequired,
+    required this.creditsAttempted,
+    required this.message,
   });
 
-  // Factory method to calculate standing from GPA
-  factory AcademicStanding.calculate({
-    required double gpa,
-    required int creditsEarned,
-    required int creditsRequired,
-  }) {
-    String level;
-    if (gpa >= 3.7 && gpa <= 4.0) {
-      level = 'Excellent';
-    } else if (gpa >= 2.7 && gpa < 3.7) {
-      level = 'Good';
-    } else if (gpa >= 2.0 && gpa < 2.7) {
-      level = 'Satisfactory';
+  factory AcademicStanding.calculate(double gpa, int creditsEarned, int creditsAttempted) {
+    String status;
+    String message;
+
+    if (gpa >= 3.5) {
+      status = 'excellent';
+      message = 'Dean\'s List - Excellent Academic Standing';
+    } else if (gpa >= 3.0) {
+      status = 'good';
+      message = 'Good Academic Standing';
+    } else if (gpa >= 2.0) {
+      status = 'warning';
+      message = 'Academic Standing Warning - GPA Below 3.0';
     } else {
-      level = 'Probation';
+      status = 'probation';
+      message = 'Academic Probation - GPA Below 2.0';
     }
 
     return AcademicStanding(
-      level: level,
+      status: status,
       gpa: gpa,
       creditsEarned: creditsEarned,
-      creditsRequired: creditsRequired,
+      creditsAttempted: creditsAttempted,
+      message: message,
     );
   }
-
-  @override
-  String toString() =>
-      'AcademicStanding(level: $level, gpa: $gpa, creditsEarned: $creditsEarned)';
 }

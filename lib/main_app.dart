@@ -1,158 +1,101 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'screens/profile_screen.dart';
 import 'screens/courses_screen.dart';
 import 'screens/grades_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/assignments_screen.dart';
-import 'screens/instructor_grade_post_screen.dart';
-import 'screens/role_selection_screen.dart';
-import 'services/auth_service.dart';
+import 'providers/course_provider.dart';
+import 'screens/login_screen.dart';
 
-class UniversityApp extends StatefulWidget {
+class UniversityApp extends StatelessWidget {
   const UniversityApp({super.key});
 
   @override
-  State<UniversityApp> createState() => _UniversityAppState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => CourseProvider(),
+      child: MaterialApp(
+        title: 'University App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+        ),
+        home: const LoginScreen(),
+      ),
+    );
+  }
 }
 
-class _UniversityAppState extends State<UniversityApp> {
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   int selectedIndex = 0;
-  final AuthService _authService = AuthService();
   late final List<Widget> screens;
 
   @override
   void initState() {
     super.initState();
-    // Instructor dashboard - only instructor-relevant features
     screens = const [
       ProfileScreen(),
       CoursesScreen(),
       AssignmentsScreen(),
+      AnalyticsScreen(),
       GradesScreen(),
     ];
-  }
-
-  Future<void> _signOut() async {
-    await _authService.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-      (route) => false,
-    );
+    
+    // Fetch initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<CourseProvider>(context, listen: false);
+        provider.fetchCourses();
+        provider.fetchAssignments();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1740),
+        title: const Text('University App'),
+        centerTitle: true,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.cast_for_education_rounded,
-                  color: Colors.white, size: 18),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'UniPortal',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B6B).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFFFF6B6B).withOpacity(0.4)),
-              ),
-              child: const Text(
-                'Instructor',
-                style: TextStyle(
-                  color: Color(0xFFFF6B6B),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Post Grade button
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const InstructorGradePostScreen()),
-            ),
-            icon: const Icon(Icons.grade_rounded, color: Color(0xFFFF6B6B)),
-            tooltip: 'Post Grade',
+      ),
+      body: screens[selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: selectedIndex,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) => setState(() => selectedIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
-          IconButton(
-            onPressed: _signOut,
-            icon: const Icon(Icons.logout_rounded, color: Colors.white70),
-            tooltip: 'Sign Out',
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book),
+            label: 'Courses',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Assignments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grade),
+            label: 'Grades',
           ),
         ],
-      ),
-      backgroundColor: const Color(0xFF0F0C29),
-      body: screens[selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1740),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: selectedIndex,
-          onTap: (index) => setState(() => selectedIndex = index),
-          backgroundColor: Colors.transparent,
-          selectedItemColor: const Color(0xFFFF6B6B),
-          unselectedItemColor: Colors.white38,
-          elevation: 0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.book_outlined),
-              activeIcon: Icon(Icons.book_rounded),
-              label: 'Courses',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_outlined),
-              activeIcon: Icon(Icons.assignment_rounded),
-              label: 'Assignments',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grade_outlined),
-              activeIcon: Icon(Icons.grade_rounded),
-              label: 'Grades',
-            ),
-          ],
-        ),
       ),
     );
   }

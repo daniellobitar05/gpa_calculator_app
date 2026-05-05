@@ -1,8 +1,6 @@
 class Assignment {
   final int? id;
-  final String? firestoreId;
-  final int? courseId; // Legacy
-  final String? courseFirestoreId; // New link
+  final int courseId;
   final String title;
   final String description;
   final double maxPoints;
@@ -13,9 +11,7 @@ class Assignment {
 
   Assignment({
     this.id,
-    this.firestoreId,
-    this.courseId,
-    this.courseFirestoreId,
+    required this.courseId,
     required this.title,
     required this.description,
     required this.maxPoints,
@@ -29,9 +25,8 @@ class Assignment {
 
   Map<String, dynamic> toMap() {
     return {
-      // 'id': id,
-      // 'courseId': courseId, 
-      'courseFirestoreId': courseFirestoreId,
+      'id': id,
+      'courseId': courseId,
       'title': title,
       'description': description,
       'maxPoints': maxPoints,
@@ -45,16 +40,14 @@ class Assignment {
   factory Assignment.fromMap(Map<String, dynamic> map) {
     return Assignment(
       id: map['id'],
-      firestoreId: map['firestoreId'],
       courseId: map['courseId'],
-      courseFirestoreId: map['courseFirestoreId'],
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      maxPoints: (map['maxPoints'] ?? 0).toDouble(),
-      earnedPoints: map['earnedPoints'] != null ? (map['earnedPoints'] as num).toDouble() : null,
+      title: map['title'],
+      description: map['description'],
+      maxPoints: map['maxPoints'],
+      earnedPoints: map['earnedPoints'],
       dueDate: DateTime.parse(map['dueDate']),
-      status: map['status'] ?? 'pending',
-      weight: (map['weight'] ?? 0).toDouble(),
+      status: map['status'],
+      weight: map['weight'],
     );
   }
 }

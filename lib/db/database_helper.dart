@@ -1,18 +1,11 @@
-import 'dart:io';
+import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
-  DatabaseHelper._init() {
-    // Initialize FFI for Windows/Linux/MacOS
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-  }
+  DatabaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -210,13 +203,5 @@ class DatabaseHelper {
   Future close() async {
     final db = await database;
     db.close();
-  }
-
-  // Delete database
-  Future<void> deleteDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'university.db');
-    await databaseFactory.deleteDatabase(path);
-    _database = null;
   }
 }
